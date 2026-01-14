@@ -25,23 +25,36 @@ func main() {
 		}
 	}
 
+	// 读取mod包名
+	modFile, err := os.Open("./go.mod")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer modFile.Close()
+	scanner := bufio.NewScanner(modFile)
+	var modName string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "module") {
+			modName = strings.Split(line, " ")[1]
+			break
+		}
+	}
+
 	// 读取函数方法
 	for _, v := range grpcFileList {
-		break
-		log.Println("准备格式化: ====>>", v.Name())
 		filename := v.Name()
 		filename = filename[:len(filename)-11]
 
-		readFuncMethod(filename)
+		readFuncMethod(filename, modName)
 	}
 
-	// readServiceFile(grpcFileList)
-	readServerFile(grpcFileList)
+	readServiceFile(grpcFileList, modName)
+	readServerFile(grpcFileList, modName)
 }
 
 // 处理sServerF文件
-func readServerFile(grpcFileList []fs.DirEntry) {
-
+func readServerFile(grpcFileList []fs.DirEntry, modName string) {
 	path := "./service/myrpc/server.go"
 	body, err := os.ReadFile(path)
 	if err != nil {
@@ -78,15 +91,35 @@ func readServerFile(grpcFileList []fs.DirEntry) {
 	bodyList[1] = grpcData + "	// 注入GRPC服务"
 	bodyList[3] = gwData + "	// 注入GW服务"
 	bodyString = strings.Join(bodyList, "")
+
+	// 判断是否已经引用包名
+	if !strings.Contains(bodyString, fmt.Sprintf(`"%s/service/myrpc/middleware"`, modName)) {
+		importStr := fmt.Sprintf(`"%s/service/myrpc/middleware"`, modName)
+		bodyString = strings.ReplaceAll(bodyString, "import (", "import (\n\t"+importStr)
+	}
+	if !strings.Contains(bodyString, fmt.Sprintf(`"%s/service/myrpc/proto"`, modName)) {
+		importStr := fmt.Sprintf(`"%s/service/myrpc/proto"`, modName)
+		bodyString = strings.ReplaceAll(bodyString, "import (", "import (\n\t"+importStr)
+	}
+	if !strings.Contains(bodyString, fmt.Sprintf(`"%s/service/myrpc/service"`, modName)) {
+		importStr := fmt.Sprintf(`"%s/service/myrpc/service"`, modName)
+		bodyString = strings.ReplaceAll(bodyString, "import (", "import (\n\t"+importStr)
+	}
+
 	log.Println("写入service服务")
 	os.WriteFile(path, []byte(bodyString), 0666)
 }
 
 // 处理service文件
-func readServiceFile(grpcFileList []fs.DirEntry) {
+func readServiceFile(grpcFileList []fs.DirEntry, modName string) {
+	if len(grpcFileList) == 0 {
+		return
+	}
 
 	path := "./service/myrpc/service/service.go"
 	body := `package service
+
+import "%s/service/myrpc/proto"
 
 // Service .
 type Service struct {
@@ -108,7 +141,7 @@ func NewService() *Service {
 		name = "\tproto.Unimplemented" + name + "Server\n"
 		data += name
 	}
-	body = fmt.Sprintf(body, data)
+	body = fmt.Sprintf(body, modName, data)
 	log.Println("写入service服务")
 	os.WriteFile(path, []byte(body), 0666)
 }
@@ -119,7 +152,7 @@ type FuncInfo struct {
 	FuncNames  string
 }
 
-func readFuncMethod(fileName string) {
+func readFuncMethod(fileName string, modName string) {
 	file, err := os.Open(grpcPath + "/" + fileName + "_grpc.pb.go")
 	if err != nil {
 		log.Fatal(err)
@@ -164,15 +197,15 @@ func readFuncMethod(fileName string) {
 	// 处理operate文件夹
 	operateFile := "./service/operate" + "/" + fileName + ".go"
 	operateBody := readService(operateFile)
-	checkOperateFunc(operateFile, string(operateBody), funcInfo)
+	checkOperateFunc(operateFile, string(operateBody), funcInfo, modName)
 
 	// 处理service文件夹
 	serceFile := "./service/myrpc/service" + "/" + fileName + ".go"
 	serviceBody := readService(serceFile)
-	checkServiceFunc(serceFile, string(serviceBody), funcInfo)
+	checkServiceFunc(serceFile, string(serviceBody), funcInfo, modName)
 }
 
-func checkServiceFunc(fileName string, body string, funcList []FuncInfo) {
+func checkServiceFunc(fileName string, body string, funcList []FuncInfo, modName string) {
 	if body == "" {
 		// 如果是空的  直接写入文件
 		emptyBody(fileName, funcList)
@@ -200,8 +233,10 @@ func emptyBody(fileName string, funcInfo []FuncInfo) {
 
 import (
 	"context"
+
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
+	"github.com/entrehuihui/grpa-gateway-complete2/service/operate"
 )
-	
 `
 	for _, v := range funcInfo {
 		body += createFunc(v)
@@ -214,13 +249,14 @@ func createFunc(v FuncInfo) string {
 	reFuncs := strings.Split(v.FuncName, "(ctx context.Context,")[0]
 	body := fmt.Sprintf(`
 %s
-func (s Service) %s{
+func (s Service) %s {
 	return operate.%s(ctx, in)
-}`, v.DetailInfo, v.FuncName, reFuncs)
+}
+`, v.DetailInfo, v.FuncName, reFuncs)
 	return body
 }
 
-func checkOperateFunc(fileName string, body string, funcList []FuncInfo) {
+func checkOperateFunc(fileName string, body string, funcList []FuncInfo, modName string) {
 	if body == "" {
 		// 如果是空的  直接写入文件
 		emptyBodyOperate(fileName, funcList)
@@ -249,8 +285,9 @@ func emptyBodyOperate(fileName string, funcInfo []FuncInfo) {
 
 import (
 	"context"
+
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
 )
-	
 `
 	for _, v := range funcInfo {
 		body += createOpetateFunc(v)
@@ -262,7 +299,7 @@ import (
 func createOpetateFunc(v FuncInfo) string {
 	body := fmt.Sprintf(`
 %s
-func %s{
+func %s {
 	return nil, nil
 }
 `, v.DetailInfo, v.FuncName)
