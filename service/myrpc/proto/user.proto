@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "yibao/service/myrpc/proto";
+
+import "google/api/annotations.proto";
+
+// 用户
+service User {
+  //   User 列表
+  rpc GetUser(GetUserReq) returns (GetUserResp) {
+    option (google.api.http) = {
+      get : "/24700/user"
+    };
+  };
+  //   User 添加
+  rpc PostUser(PostUserReq) returns (PostUserResp) {
+    option (google.api.http) = {
+      post : "/24700/user"
+      body : "*"
+    };
+  };
+  //   User 修改
+  rpc PutUser(PutUserReq) returns (PutUserResp) {
+    option (google.api.http) = {
+      put : "/24700/user"
+      body : "*"
+    };
+  };
+}
+// 用户列表请求
+message GetUserReq {
+  int64 limit = 1;
+  int64 offset = 2;
+  string fuzzy = 3;
+  int32 state = 4;
+  int32 roleid = 5;
+}
+// 用户列表响应
+message GetUserResp {
+  int32 code = 1;
+  string message = 2;
+  int64 count = 3;
+  repeated UserInfo data = 4;
+}
+// 用户信息
+message UserInfo {
+  int32 id = 1;
+  string name = 2;
+  string details = 3;
+  int64 createtime = 4;
+  int64 updatetime = 5;
+  int32 roleid = 6;
+  string rolename = 7;
+  int32 state = 8;
+}
+
+message PostUserReq {
+  string name = 1;
+  string details = 2;
+  string password = 3;
+  int32 roleid = 4;
+  int32 state = 5;
+}
+message PostUserResp {
+  int32 code = 1;
+  string message = 2;
+}
+
+message PutUserReq {
+  int32 id = 1;
+  int32 roleid = 2;
+  int32 state = 3;
+}
+message PutUserResp {
+  int32 code = 1;
+  string message = 2;
+}

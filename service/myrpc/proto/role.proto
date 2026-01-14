@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "yibao/service/myrpc/proto";
+
+import "google/api/annotations.proto";
+
+// 用户
+service Role {
+  //   GetRole 列表
+  rpc GetRole(GetRoleReq) returns (GetRoleResp) {
+    option (google.api.http) = {
+      get : "/24700/role"
+    };
+  };
+  //   GetRole 添加
+  rpc PostRole(PostRoleReq) returns (PostRoleResp) {
+    option (google.api.http) = {
+      post : "/24700/role"
+      body : "*"
+    };
+  };
+  //   GetRole 修改
+  rpc PutRole(PutRoleReq) returns (PutRoleResp) {
+    option (google.api.http) = {
+      put : "/24700/role"
+      body : "*"
+    };
+  };
+  //   GetRole 列表
+  rpc GetRoleAuth(GetRoleAuthReq) returns (GetRoleAuthResp) {
+    option (google.api.http) = {
+      get : "/24700/role/auth"
+    };
+  };
+}
+
+message GetRoleReq {
+  int64 limit = 1;
+  int64 offset = 2;
+  string fuzzy = 3;
+}
+
+message GetRoleResp {
+  int32 code = 1;
+  string message = 2;
+  int64 count = 3;
+  repeated GetRoleInfo data = 4;
+}
+
+message GetRoleInfo {
+  int32 id = 1;
+  string name = 2;
+  string details = 3;
+  int64 createtime = 4;
+  int64 updatetime = 5;
+  string authlists = 6;
+}
+
+// 添加角色请求
+message PostRoleReq {
+  string name = 1;
+  string details = 2;
+}
+// 添加角色响应
+message PostRoleResp {
+  int32 code = 1;
+  string message = 2;
+}
+// 修改角色请求
+message PutRoleReq {
+  int32 id = 1;
+  string authlists = 2;
+}
+// 修改角色响应
+message PutRoleResp {
+  int32 code = 1;
+  string message = 2;
+}
+// 权限列表请求
+message GetRoleAuthReq {
+  int64 limit = 1;
+  int64 offset = 2;
+  string fuzzy = 3;
+}
+// 权限列表
+message GetRoleAuthResp {
+  int32 code = 1;
+  string message = 2;
+  int64 count = 3;
+  repeated AthInfo data = 4;
+}
+// 权限信息
+message AthInfo {
+  int32 id = 1;
+  string name = 2;
+  string authid = 3;
+}
