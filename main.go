@@ -208,7 +208,7 @@ func readFuncMethod(fileName string, modName string) {
 func checkServiceFunc(fileName string, body string, funcList []FuncInfo, modName string) {
 	if body == "" {
 		// 如果是空的  直接写入文件
-		emptyBody(fileName, funcList)
+		emptyBody(fileName, funcList, modName)
 		return
 	}
 	// 如果不是空
@@ -228,16 +228,16 @@ func checkServiceFunc(fileName string, body string, funcList []FuncInfo, modName
 	os.WriteFile(fileName, []byte(body), 0666)
 }
 
-func emptyBody(fileName string, funcInfo []FuncInfo) {
-	body := `package service
+func emptyBody(fileName string, funcInfo []FuncInfo, modName string) {
+	body := fmt.Sprintf(`package service
 
 import (
 	"context"
 
-	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
-	"github.com/entrehuihui/grpa-gateway-complete2/service/operate"
+	"%s/service/myrpc/proto"
+	"%s/service/operate"
 )
-`
+`, modName, modName)
 	for _, v := range funcInfo {
 		body += createFunc(v)
 	}
@@ -259,7 +259,7 @@ func (s Service) %s {
 func checkOperateFunc(fileName string, body string, funcList []FuncInfo, modName string) {
 	if body == "" {
 		// 如果是空的  直接写入文件
-		emptyBodyOperate(fileName, funcList)
+		emptyBodyOperate(fileName, funcList, modName)
 		return
 	}
 	// 如果不是空
@@ -280,15 +280,15 @@ func checkOperateFunc(fileName string, body string, funcList []FuncInfo, modName
 	os.WriteFile(fileName, []byte(body), 0666)
 }
 
-func emptyBodyOperate(fileName string, funcInfo []FuncInfo) {
-	body := `package operate
+func emptyBodyOperate(fileName string, funcInfo []FuncInfo, modName string) {
+	body := fmt.Sprintf(`package operate
 
 import (
 	"context"
 
-	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
+	"%s/service/myrpc/proto"
 )
-`
+`, modName)
 	for _, v := range funcInfo {
 		body += createOpetateFunc(v)
 	}
