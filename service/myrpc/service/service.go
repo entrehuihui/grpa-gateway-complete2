@@ -1,6 +1,6 @@
 package service
 
-import "grpa-gateway-complete2/service/myrpc/proto"
+import "github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
 
 // Service .
 type Service struct {

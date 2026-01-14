@@ -1,4 +1,4 @@
-module grpa-gateway-complete2
+module github.com/entrehuihui/grpa-gateway-complete2
 
 go 1.25.5
 

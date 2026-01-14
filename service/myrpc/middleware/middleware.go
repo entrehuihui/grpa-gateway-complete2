@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"peizhiwenjian/service/public/tools"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
@@ -30,33 +27,7 @@ func ZapLogger() *zap.Logger {
 
 // MyAuthFunction .
 func MyAuthFunction(ctx context.Context) (context.Context, error) {
-
-	method, ok := grpc.Method(ctx)
-	if !ok {
-		return nil, status.Errorf(301, "请求错误, 无法获取请求数据")
-	}
-	log.Println("method =====>>>> ", method)
-	// // 过滤全部LoginService服务 /proto.SmsService/SmsPost
-	if method == "/proto.Login/loginPost" || method == "/proto.Login/loginPut" || method == "/proto.Login/loginPutCode" {
-		return ctx, nil
-	}
-
-	token, err := auth.AuthFromMD(ctx, "Bearer")
-	if err != nil {
-		return nil, status.Errorf(301, "登录已过期1 %s", err.Error())
-	}
-	if token == "" {
-		return nil, status.Errorf(301, "登录已过期2 token为空")
-	}
-
-	tokenData, err := tools.ParseJWT(token)
-	if err != nil {
-		return nil, status.Errorf(301, "登录已过期2 %s", err.Error())
-	}
-
-	// 使用context.WithValue添加了值后，可以用Value(key)方法获取值
-	newCtx := tools.SetTokenValue(ctx, tokenData)
-	return newCtx, nil
+	return ctx, nil
 }
 
 func InterceptorLogger() logging.Logger {

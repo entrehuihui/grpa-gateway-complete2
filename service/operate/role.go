@@ -2,7 +2,8 @@ package operate
 
 import (
 	"context"
-	"grpa-gateway-complete2/service/myrpc/proto"
+
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
 )
 
 // GetRole 列表

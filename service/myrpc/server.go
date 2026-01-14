@@ -3,9 +3,6 @@ package myrpc
 import (
 	"context"
 	"crypto/tls"
-	"grpa-gateway-complete2/service/myrpc/middleware"
-	"grpa-gateway-complete2/service/myrpc/proto"
-	"grpa-gateway-complete2/service/myrpc/service"
 	"io"
 	"log"
 	"net"
@@ -14,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/middleware"
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/service"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"

@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"grpa-gateway-complete2/service/myrpc/proto"
-	"grpa-gateway-complete2/service/operate"
+
+	"github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
+	"github.com/entrehuihui/grpa-gateway-complete2/service/operate"
 )
 
 // User 列表
