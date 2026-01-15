@@ -300,7 +300,8 @@ func createOpetateFunc(v FuncInfo) string {
 	body := fmt.Sprintf(`
 %s
 func %s {
-	return nil, nil
+	var err error
+	return nil, err
 }
 `, v.DetailInfo, v.FuncName)
 
