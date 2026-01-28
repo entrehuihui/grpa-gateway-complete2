@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "yibao/service/myrpc/proto";
+
+import "google/api/annotations.proto";
+
+// 流式服务
+service Stream {
+  // 双向流式RPC
+  rpc BiDiStream(stream StreamRequest) returns (stream StreamResponse) {
+    option (google.api.http) = {
+      post : "/v1/stream/bidistream"
+      body : "*"
+    };
+  }
+  // 客户端流式RPC
+  rpc ClientStream(stream StreamRequest) returns (StreamResponse) {
+    option (google.api.http) = {
+      post : "/v1/stream/clientstream"
+      body : "*"
+    };
+  }
+  // 服务端流式RPC
+  rpc UniStream(StreamRequest) returns (stream StreamResponse) {
+    option (google.api.http) = {
+      post : "/v1/stream/unistream"
+      body : "*"
+    };
+  }
+}
+
+// 流式请求消息
+message StreamRequest {
+  string message = 1; // 请求消息内容
+}
+
+// 流式响应消息
+message StreamResponse {
+  string message = 1; // 响应消息内容
+}

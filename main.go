@@ -159,7 +159,7 @@ func readFuncMethod(fileName string, modName string) {
 	}
 	defer file.Close()
 
-	clientName := fmt.Sprintf("type %s%sClient interface", strings.ToUpper(fileName[:1]), fileName[1:])
+	clientName := fmt.Sprintf("type %s%sServer interface", strings.ToUpper(fileName[:1]), fileName[1:])
 	scanner := bufio.NewScanner(file)
 	searchStart := false
 	detailInfo := ""
@@ -170,7 +170,7 @@ func readFuncMethod(fileName string, modName string) {
 			searchStart = true
 			continue
 		}
-		if line == "}" {
+		if searchStart && line == "}" {
 			break
 		}
 		if searchStart {
@@ -178,11 +178,53 @@ func readFuncMethod(fileName string, modName string) {
 				detailInfo = strings.ReplaceAll(line, "\t", "")
 				continue
 			}
-			if strings.Contains(line, "ctx context.Context") {
-				funcName := strings.ReplaceAll(line, ", opts ...grpc.CallOption", "")
-				funcName = strings.ReplaceAll(funcName, "\t", "")
+			// 如果是普通GRPC方法
+			if strings.Contains(line, "context.Context") {
+				// funcName := strings.ReplaceAll(line, ", opts ...grpc.CallOption", "")
+				funcName := strings.ReplaceAll(line, "\t", "")
 				funcName = strings.ReplaceAll(funcName, "*", "*proto.")
+				funcName = strings.ReplaceAll(funcName, "context.Context,", "ctx context.Context, in")
 				funcNames := strings.ReplaceAll(strings.Split(funcName, "ctx context.Context,")[0], "\t", "") + "ctx context.Context"
+				funcInfo = append(funcInfo, FuncInfo{
+					FuncName:   funcName,
+					DetailInfo: detailInfo,
+					FuncNames:  funcNames,
+				})
+				detailInfo = ""
+			} else if strings.Contains(line, "_BiDi") {
+				// 双向流式RPC
+				funcName := strings.ReplaceAll(line, "\t", "")
+				funcName = strings.ReplaceAll(funcName, "*", "*proto.")
+				funcName = strings.ReplaceAll(funcName, "(", "(stream proto.")
+				funcNames := strings.ReplaceAll(strings.Split(funcName, "(")[0], "\t", "")
+				funcInfo = append(funcInfo, FuncInfo{
+					FuncName:   funcName,
+					DetailInfo: detailInfo,
+					FuncNames:  funcNames,
+				})
+				detailInfo = ""
+			} else if strings.Contains(line, "_Client") {
+				// 双向流式RPC
+				funcName := strings.ReplaceAll(line, "\t", "")
+				funcName = strings.ReplaceAll(funcName, "*", "*proto.")
+				funcName = strings.ReplaceAll(funcName, "(", "(stream proto.")
+				funcNames := strings.ReplaceAll(strings.Split(funcName, "(")[0], "\t", "")
+				funcInfo = append(funcInfo, FuncInfo{
+					FuncName:   funcName,
+					DetailInfo: detailInfo,
+					FuncNames:  funcNames,
+				})
+				detailInfo = ""
+			} else if strings.Contains(line, "_Uni") {
+				// 双向流式RPC
+				funcName := strings.ReplaceAll(line, "\t", "")
+				if strings.Contains(funcName, "*") {
+					funcName = strings.ReplaceAll(funcName, "*", "in *proto.")
+					funcName = strings.ReplaceAll(funcName, ",", ", stream proto.")
+				} else {
+					funcName = strings.ReplaceAll(funcName, "(", "(stream proto.")
+				}
+				funcNames := strings.ReplaceAll(strings.Split(funcName, "(")[0], "\t", "")
 				funcInfo = append(funcInfo, FuncInfo{
 					FuncName:   funcName,
 					DetailInfo: detailInfo,
@@ -229,23 +271,45 @@ func checkServiceFunc(fileName string, body string, funcList []FuncInfo, modName
 }
 
 func emptyBody(fileName string, funcInfo []FuncInfo, modName string) {
+	contextImport := ""
+	data := ""
+	for _, v := range funcInfo {
+		if strings.Contains(v.FuncName, "context.Context") {
+			contextImport = "\"context\"\n"
+		}
+		data += createFunc(v)
+	}
+
 	body := fmt.Sprintf(`package service
 
 import (
-	"context"
-
+	%s
 	"%s/service/myrpc/proto"
 	"%s/service/operate"
 )
-`, modName, modName)
-	for _, v := range funcInfo {
-		body += createFunc(v)
-	}
+%s`, contextImport, modName, modName, data)
 
 	os.WriteFile(fileName, []byte(body), 0777)
 }
 
 func createFunc(v FuncInfo) string {
+	// 流式方法
+	if strings.Contains(v.FuncName, "_BiDi") || strings.Contains(v.FuncName, "_Client") || strings.Contains(v.FuncName, "_Uni") {
+		funcsOperators := "(stream)"
+		if strings.Contains(v.FuncName, "in") {
+			funcsOperators = "(in, stream)"
+		}
+
+		body := fmt.Sprintf(`
+%s
+func (s Service) %s {
+	return operate.%s%s
+}
+`, v.DetailInfo, v.FuncName, strings.Split(v.FuncName, "(")[0], funcsOperators)
+		return body
+	}
+
+	// 普通GRPC方法
 	reFuncs := strings.Split(v.FuncName, "(ctx context.Context,")[0]
 	body := fmt.Sprintf(`
 %s
@@ -269,7 +333,6 @@ func checkOperateFunc(fileName string, body string, funcList []FuncInfo, modName
 			funcInfo = append(funcInfo, v)
 		}
 	}
-	log.Println("funcInfo========>>", len(funcInfo))
 	if len(funcInfo) == 0 {
 		return
 	}
@@ -281,22 +344,40 @@ func checkOperateFunc(fileName string, body string, funcList []FuncInfo, modName
 }
 
 func emptyBodyOperate(fileName string, funcInfo []FuncInfo, modName string) {
+	contextImport := ""
+	data := ""
+	for _, v := range funcInfo {
+		if strings.Contains(v.FuncName, "context.Context") {
+			contextImport = "\"context\"\n"
+		}
+		data += createOpetateFunc(v)
+	}
 	body := fmt.Sprintf(`package operate
 
 import (
-	"context"
-
+	%s
 	"%s/service/myrpc/proto"
 )
-`, modName)
-	for _, v := range funcInfo {
-		body += createOpetateFunc(v)
-	}
+%s`, contextImport, modName, data)
 
 	os.WriteFile(fileName, []byte(body), 0777)
 }
 
 func createOpetateFunc(v FuncInfo) string {
+
+	// 流式方法
+	if strings.Contains(v.FuncName, "_BiDi") || strings.Contains(v.FuncName, "_Client") || strings.Contains(v.FuncName, "_Uni") {
+		body := fmt.Sprintf(`
+%s
+func %s {
+	var err error
+	return err
+}
+`, v.DetailInfo, v.FuncName)
+
+		return body
+	}
+	// 普通GRPC方法
 	body := fmt.Sprintf(`
 %s
 func %s {

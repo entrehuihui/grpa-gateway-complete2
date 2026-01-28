@@ -151,6 +151,7 @@ func startGRPC(cfg config, tlsConfig *tls.Config) *grpc.Server {
 
 	// 注入GRPC服务
 	proto.RegisterRoleServer(gs, server)
+	proto.RegisterStreamServer(gs, server)
 	proto.RegisterUserServer(gs, server)
 	// 注入GRPC服务
 
@@ -170,6 +171,10 @@ func startGW(cfg config) *http.ServeMux {
 
 	// 注入GW服务
 	err = proto.RegisterRoleHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+	if err != nil {
+		log.Fatal("启动GW错误:", err)
+	}
+	err = proto.RegisterStreamHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}
