@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "yibao/service/myrpc/proto";
+
+import "google/api/annotations.proto";
+
+// 传感器服务
+service Sensor {
+  //   SensorPost 流式测试
+  rpc SensorPost(stream SensorPostReq) returns (stream SensorPostResp) {
+    option (google.api.http) = {
+      post : "/24710/sensor"
+      body : "*"
+    };
+  }
+}
+
+// SensorPost 流式测试
+message SensorPostReq {}
+
+// SensorPost 响应
+message SensorPostResp {
+  // 状态码
+  int32 code = 2;
+  // 数据内容
+  string data = 3;
+}

@@ -191,31 +191,7 @@ func readFuncMethod(fileName string, modName string) {
 					FuncNames:  funcNames,
 				})
 				detailInfo = ""
-			} else if strings.Contains(line, "_BiDi") {
-				// 双向流式RPC
-				funcName := strings.ReplaceAll(line, "\t", "")
-				funcName = strings.ReplaceAll(funcName, "*", "*proto.")
-				funcName = strings.ReplaceAll(funcName, "(", "(stream proto.")
-				funcNames := strings.ReplaceAll(strings.Split(funcName, "(")[0], "\t", "")
-				funcInfo = append(funcInfo, FuncInfo{
-					FuncName:   funcName,
-					DetailInfo: detailInfo,
-					FuncNames:  funcNames,
-				})
-				detailInfo = ""
-			} else if strings.Contains(line, "_Client") {
-				// 双向流式RPC
-				funcName := strings.ReplaceAll(line, "\t", "")
-				funcName = strings.ReplaceAll(funcName, "*", "*proto.")
-				funcName = strings.ReplaceAll(funcName, "(", "(stream proto.")
-				funcNames := strings.ReplaceAll(strings.Split(funcName, "(")[0], "\t", "")
-				funcInfo = append(funcInfo, FuncInfo{
-					FuncName:   funcName,
-					DetailInfo: detailInfo,
-					FuncNames:  funcNames,
-				})
-				detailInfo = ""
-			} else if strings.Contains(line, "_Uni") {
+			} else if strings.Contains(line, "_") {
 				// 双向流式RPC
 				funcName := strings.ReplaceAll(line, "\t", "")
 				if strings.Contains(funcName, "*") {
@@ -275,7 +251,7 @@ func emptyBody(fileName string, funcInfo []FuncInfo, modName string) {
 	data := ""
 	for _, v := range funcInfo {
 		if strings.Contains(v.FuncName, "context.Context") {
-			contextImport = "\"context\"\n"
+			contextImport = "\"context\"\n\n\t"
 		}
 		data += createFunc(v)
 	}
@@ -283,8 +259,7 @@ func emptyBody(fileName string, funcInfo []FuncInfo, modName string) {
 	body := fmt.Sprintf(`package service
 
 import (
-	%s
-	"%s/service/myrpc/proto"
+	%s"%s/service/myrpc/proto"
 	"%s/service/operate"
 )
 %s`, contextImport, modName, modName, data)
@@ -294,7 +269,7 @@ import (
 
 func createFunc(v FuncInfo) string {
 	// 流式方法
-	if strings.Contains(v.FuncName, "_BiDi") || strings.Contains(v.FuncName, "_Client") || strings.Contains(v.FuncName, "_Uni") {
+	if strings.Contains(v.FuncName, "_") {
 		funcsOperators := "(stream)"
 		if strings.Contains(v.FuncName, "in") {
 			funcsOperators = "(in, stream)"
@@ -348,15 +323,14 @@ func emptyBodyOperate(fileName string, funcInfo []FuncInfo, modName string) {
 	data := ""
 	for _, v := range funcInfo {
 		if strings.Contains(v.FuncName, "context.Context") {
-			contextImport = "\"context\"\n"
+			contextImport = "\"context\"\n\n\t"
 		}
 		data += createOpetateFunc(v)
 	}
 	body := fmt.Sprintf(`package operate
 
 import (
-	%s
-	"%s/service/myrpc/proto"
+	%s"%s/service/myrpc/proto"
 )
 %s`, contextImport, modName, data)
 
@@ -366,7 +340,7 @@ import (
 func createOpetateFunc(v FuncInfo) string {
 
 	// 流式方法
-	if strings.Contains(v.FuncName, "_BiDi") || strings.Contains(v.FuncName, "_Client") || strings.Contains(v.FuncName, "_Uni") {
+	if strings.Contains(v.FuncName, "_") {
 		body := fmt.Sprintf(`
 %s
 func %s {
