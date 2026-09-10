@@ -5,6 +5,7 @@ import "github.com/entrehuihui/grpa-gateway-complete2/service/myrpc/proto"
 // Service .
 type Service struct {
 	// ##继承
+	proto.UnimplementedPublicdataServer
 	proto.UnimplementedRoleServer
 	proto.UnimplementedSensorServer
 	proto.UnimplementedStreamServer

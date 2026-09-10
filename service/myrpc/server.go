@@ -150,6 +150,7 @@ func startGRPC(cfg config, tlsConfig *tls.Config) *grpc.Server {
 	gs := grpc.NewServer(opts...)
 
 	// 注入GRPC服务
+	proto.RegisterPublicdataServer(gs, server)
 	proto.RegisterRoleServer(gs, server)
 	proto.RegisterSensorServer(gs, server)
 	proto.RegisterStreamServer(gs, server)
@@ -169,21 +170,28 @@ func startGW(cfg config) *http.ServeMux {
 	mux := runtime.NewServeMux()
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
-
+	conn, err := grpc.DialContext(ctx, cfg.grpcPort, opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// 注入GW服务
-	err = proto.RegisterRoleHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+	err = proto.RegisterPublicdataHandler(ctx, mux, conn)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}
-	err = proto.RegisterSensorHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+	err = proto.RegisterRoleHandler(ctx, mux, conn)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}
-	err = proto.RegisterStreamHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+	err = proto.RegisterSensorHandler(ctx, mux, conn)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}
-	err = proto.RegisterUserHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+	err = proto.RegisterStreamHandler(ctx, mux, conn)
+	if err != nil {
+		log.Fatal("启动GW错误:", err)
+	}
+	err = proto.RegisterUserHandler(ctx, mux, conn)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}

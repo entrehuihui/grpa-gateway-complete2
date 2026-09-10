@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "yibao/service/myrpc/proto";
+
+import "google/api/annotations.proto";
+// 公共请求
+service Publicdata {
+  //   GetCacheURL 获取临时上传连接
+  rpc GetCacheURL(GetCacheURLReq) returns (GetCacheURLResp) {
+    option (google.api.http) = {
+      get : "/24710/publicdata/cache_url"
+    };
+  };
+}
+// 获取临时上传连接请求
+message GetCacheURLReq {}
+// 获取临时上传连接响应
+message GetCacheURLResp {
+  // 状态码 0成功，其他失败
+  int32 code = 1;
+  // 提示信息
+  string url = 3;
+}

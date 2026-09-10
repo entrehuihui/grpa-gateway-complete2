@@ -79,7 +79,7 @@ func readServerFile(grpcFileList []fs.DirEntry, modName string) {
 		name := v.Name()
 		name = name[:len(name)-11]
 		name = strings.ToUpper(name[:1]) + name[1:]
-		regisertGw := fmt.Sprintf(`	err = proto.Register%sHandlerFromEndpoint(ctx, mux, cfg.grpcPort, opts)
+		regisertGw := fmt.Sprintf(`	err = proto.Register%sHandler(ctx, mux, conn)
 	if err != nil {
 		log.Fatal("启动GW错误:", err)
 	}`, name)
